@@ -1,3 +1,6 @@
+using HmctsDts.Server.Data;
+using Microsoft.EntityFrameworkCore;
+
 namespace HmctsDts.Server;
 
 public class Program
@@ -9,6 +12,10 @@ public class Program
         // Add services to the container.
 
         builder.Services.AddControllers();
+        builder.Services.AddDbContext<DataContext>(opt =>
+        {
+            opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+        });
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
 
@@ -26,7 +33,7 @@ public class Program
         app.MapControllers();
 
         app.MapGet("/status", () => Results.Ok());
-        
+
         app.Run();
     }
 }
