@@ -25,6 +25,8 @@ public class Program
 
         app.MapControllers();
 
+        app.MapGet("/status", () => Results.Ok());
+        
         app.Run();
     }
 }
