@@ -1,0 +1,7 @@
+﻿services:
+  hmctsdts.server:
+    image: hmctsdts.server
+    build:
+      context: .
+      dockerfile: HmctsDts.Server/Dockerfile
+

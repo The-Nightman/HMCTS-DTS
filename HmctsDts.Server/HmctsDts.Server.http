@@ -1,0 +1,6 @@
+@HmctsDts.Server_HostAddress = http://localhost:5155
+
+GET {{HmctsDts.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
