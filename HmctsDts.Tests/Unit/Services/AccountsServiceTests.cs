@@ -26,7 +26,7 @@ public class AccountsServiceTests
     [Test]
     [Category("Unit")]
     [Category("AccountsService")]
-    public async Task RegisterNewCaseWorker_CreatesUser()
+    public async Task RegisterNewCaseWorker_CreatesUser_ReturnsTrue()
     {
         // Arrange
         var userObj = new RegisterUserDto
@@ -40,12 +40,15 @@ public class AccountsServiceTests
         await _mockUserRepository.CreateUser(Arg.Do<User>(u => capturedUser = u));
 
         // Act
-        await _accountsService.RegisterNewCaseWorker(userObj);
+        var result = await _accountsService.RegisterNewCaseWorker(userObj);
 
         // Assert
         await _mockUserRepository.Received(1).CreateUser(Arg.Any<User>());
-        
-        Assert.That(capturedUser, Is.Not.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.True);
+            Assert.That(capturedUser, Is.Not.Null);
+        });
         Assert.Multiple(() =>
         {
             Assert.That(capturedUser.Name, Is.EqualTo(userObj.Name));
