@@ -1,6 +1,4 @@
-using HmctsDts.Server.Data;
 using HmctsDts.Server.Extensions;
-using Microsoft.EntityFrameworkCore;
 
 namespace HmctsDts.Server;
 
@@ -10,8 +8,6 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        builder.Logging.AddConsole();
-        
         // Add services to the container.
         builder.Services.AddApplicationServices(builder.Configuration);
 
