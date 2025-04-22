@@ -1,4 +1,3 @@
-using System.Text;
 using HmctsDts.Server.DTOs;
 using HmctsDts.Server.Entities;
 using HmctsDts.Server.Interfaces;
@@ -34,7 +33,7 @@ public class AccountsServiceTests
         {
             Name = "John Doe",
             Email = "john.doe@test.com",
-            Password = "password"
+            Password = "Password1!"
         };
 
         User? capturedUser = null;
