@@ -1,3 +1,4 @@
+using System.Text;
 using HmctsDts.Server.DTOs;
 using HmctsDts.Server.Entities;
 using HmctsDts.Server.Interfaces;
@@ -10,12 +11,14 @@ public class AccountsServiceTests
 {
     private IUserRepository _mockUserRepository;
     private IAccountsService _accountsService;
+    private byte[] _testPepper;
 
     [SetUp]
     public void Setup()
     {
         _mockUserRepository = Substitute.For<IUserRepository>();
-        _accountsService = new AccountsService(_mockUserRepository);
+        _testPepper = "TestPepper"u8.ToArray();
+        _accountsService = new AccountsService(_mockUserRepository, _testPepper);
     }
 
     /// <summary>
