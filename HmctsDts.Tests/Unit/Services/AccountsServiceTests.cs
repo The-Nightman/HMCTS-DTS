@@ -58,4 +58,52 @@ public class AccountsServiceTests
             Assert.That(capturedUser.Salt, Is.Not.Null);
         });
     }
+
+    /// <summary>
+    /// Verifies that the RegisterNewCaseWorker method rejects creating users with duplicate emails and returns false.
+    /// </summary>
+    [Test]
+    [Category("Unit")]
+    [Category("AccountsService")]
+    public async Task RegisterNewCaseWorker_DuplicateEmail_ReturnsFalse()
+    {
+        // Arrange
+        var userObj = new RegisterUserDto
+        {
+            Name = "John Doe",
+            Email = "john.doe@test.com",
+            Password = "Password1!"
+        };
+        var dupeUserObj = new RegisterUserDto
+        {
+            Name = "Jane Doe",
+            Email = "john.doe@test.com",
+            Password = "Password1!"
+        };
+
+        _mockUserRepository.GetUserByEmail(Arg.Any<string>())
+            .Returns(
+                x => Task.FromResult<User?>(null),
+                x => Task.FromResult<User?>(new User
+                {
+                    Email = dupeUserObj.Email,
+                    Name = dupeUserObj.Name,
+                    StaffId = "EJD-CTS-1234",
+                    Hash = "testHash"u8.ToArray(),
+                    Salt = "testSalt"u8.ToArray(),
+                })
+            );
+
+        // Act
+        var resultPass = await _accountsService.RegisterNewCaseWorker(userObj);
+        var resultFail = await _accountsService.RegisterNewCaseWorker(dupeUserObj);
+
+        // Assert
+        await _mockUserRepository.Received(1).CreateUser(Arg.Any<User>());
+        Assert.Multiple(() =>
+        {
+            Assert.That(resultPass, Is.True);
+            Assert.That(resultFail, Is.False);
+        });
+    }
 }
