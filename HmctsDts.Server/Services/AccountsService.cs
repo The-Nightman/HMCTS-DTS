@@ -1,17 +1,14 @@
-using System.Security.Cryptography;
-using System.Text;
 using HmctsDts.Server.DTOs;
 using HmctsDts.Server.Entities;
 using HmctsDts.Server.Interfaces;
-using Konscious.Security.Cryptography;
 
 namespace HmctsDts.Server.Services;
 
-public class AccountsService(IUserRepository userRepository, byte[] pepper) : IAccountsService
+public class AccountsService(IUserRepository userRepository, ISecurityService securityService) : IAccountsService
 {
     public async Task<bool> RegisterNewCaseWorker(RegisterUserDto registerUserDto)
     {
-        CreatePassHash(registerUserDto.Password, out var hash, out var salt, pepper);
+        securityService.CreatePassHash(registerUserDto.Password, out var hash, out var salt);
 
         var newCaseWorker = new User
         {
@@ -29,33 +26,39 @@ public class AccountsService(IUserRepository userRepository, byte[] pepper) : IA
         if (existingUser != null)
             return false;
 
-        await userRepository.CreateUser(newCaseWorker);
+        try
+        {
+            await userRepository.CreateUser(newCaseWorker);
+        }
+        finally
+        {
+            securityService.ZeroMemory(hash, salt);
+        }
 
         return true;
     }
 
-    private static void CreatePassHash(string password, out byte[] hash, out byte[] salt, byte[] pepper)
+    public async Task<StaffDataDto?> Login(LoginDto loginDto)
     {
-        salt = RandomNumberGenerator.GetBytes(64);
+        var existingUser = await userRepository.GetUserByEmail(loginDto.Email);
 
-        using var argon2Id = new Argon2id(Encoding.UTF8.GetBytes(password))
+        // We create default byte arrays so that we have some dummy data to compare against to keep constant time
+        var hash = existingUser?.Hash ?? new byte[64];
+        var salt = existingUser?.Salt ?? new byte[64];
+
+        var isValid = securityService.ComparePassHash(loginDto.Password, hash, salt);
+
+        securityService.ZeroMemory(hash, salt);
+
+        if (existingUser == null || !isValid) return null;
+
+        securityService.ZeroMemory(existingUser.Hash, existingUser.Salt);
+
+        return new StaffDataDto
         {
-            Salt = salt,
-            DegreeOfParallelism = 1,
-            Iterations = 2,
-            MemorySize = 19456,
+            Name = existingUser.Name,
+            StaffId = existingUser.StaffId
         };
-        var argonHash = argon2Id.GetBytes(128);
-
-        // According to the OWASP password cheat sheet, we can enhance the security of our password hashing
-        // by using a pepper. This value should be stored in the secrets.json file and not in the database.
-        // We need to add the pepper as a singleton service in the ApplicationServiceExtensions.cs file.
-        // See: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#peppering
-        using var hmac = new HMACSHA512(pepper);
-
-        hash = hmac.ComputeHash(argonHash);
-
-        CryptographicOperations.ZeroMemory(argonHash.AsSpan());
     }
 
     private async Task<string> CreateStaffId(string name)
@@ -75,16 +78,16 @@ public class AccountsService(IUserRepository userRepository, byte[] pepper) : IA
             var uid = rand.Next(0, 9999).ToString("D4");
 
             var staffId = string.Concat("E", nameIdentifier, "-CTS-", uid);
-            
+
             var existingStaffId = await userRepository.GetUserByStaffId(staffId);
             if (existingStaffId == null)
             {
                 return staffId;
             }
-            
+
             attempts++;
         }
-        
+
         throw new InvalidOperationException("Failed to generate a unique staff ID after 100 attempts.");
     }
 }

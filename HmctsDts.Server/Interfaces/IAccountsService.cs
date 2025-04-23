@@ -5,4 +5,5 @@ namespace HmctsDts.Server.Interfaces;
 public interface IAccountsService
 {
     Task<bool> RegisterNewCaseWorker(RegisterUserDto registerUserDto);
+    Task<StaffDataDto?> Login(LoginDto loginDto);
 }
