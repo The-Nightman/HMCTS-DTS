@@ -1,6 +1,7 @@
 using HmctsDts.Server.Data;
 using HmctsDts.Server.Data.Repositories;
 using HmctsDts.Server.Interfaces;
+using HmctsDts.Server.Security;
 using HmctsDts.Server.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,7 @@ public static class ApplicationServiceExtensions
         services.AddOpenApi();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IAccountsService, AccountsService>();
+        services.AddScoped<ISecurityService, SecurityService>();
         services.AddSingleton<byte[]>(prov =>
         {
             var pepperString = config["Security:Pepper"];
