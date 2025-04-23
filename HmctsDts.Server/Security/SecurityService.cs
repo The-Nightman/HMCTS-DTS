@@ -28,7 +28,7 @@ public class SecurityService(byte[] pepper) : ISecurityService
 
         hash = hmac.ComputeHash(argonHash);
 
-        CryptographicOperations.ZeroMemory(argonHash.AsSpan());
+        ZeroMemory(argonHash);
     }
 
     public bool ComparePassHash(string passwordInput, byte[] storedPassHash, byte[] salt)
@@ -48,21 +48,20 @@ public class SecurityService(byte[] pepper) : ISecurityService
 
         var result = CryptographicOperations.FixedTimeEquals(storedPassHash, inputHashResult);
 
-        CryptographicOperations.ZeroMemory(argonHash.AsSpan());
-        CryptographicOperations.ZeroMemory(inputHashResult.AsSpan());
+        ZeroMemory(argonHash, inputHashResult);
 
         return result;
     }
-    
+
     public void ZeroMemory(byte[] array)
     {
         CryptographicOperations.ZeroMemory(array.AsSpan());
     }
-    
+
     public void ZeroMemory(params byte[]?[]? arrays)
     {
         if (arrays == null) return;
-    
+
         foreach (var array in arrays)
         {
             if (array != null)
