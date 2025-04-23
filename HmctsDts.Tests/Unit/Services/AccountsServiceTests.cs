@@ -1,6 +1,7 @@
 using HmctsDts.Server.DTOs;
 using HmctsDts.Server.Entities;
 using HmctsDts.Server.Interfaces;
+using HmctsDts.Server.Security;
 using HmctsDts.Server.Services;
 using NSubstitute;
 
@@ -9,26 +10,22 @@ namespace HmctsDts.Tests.Unit.Services;
 public class AccountsServiceTests
 {
     private IUserRepository _mockUserRepository;
-    private IAccountsService _accountsService;
+    private AccountsService _accountsService;
     private byte[] _testPepper;
     private RegisterUserDto _validUserRegister;
-    private RegisterUserDto _duplicateUserRegister;
+    private SecurityService _securityService;
+    private const string StaffIdRegex = @"^EJD-CTS-\d{4}$";
 
     [SetUp]
     public void Setup()
     {
         _mockUserRepository = Substitute.For<IUserRepository>();
         _testPepper = "TestPepper"u8.ToArray();
-        _accountsService = new AccountsService(_mockUserRepository, _testPepper);
+        _securityService = new SecurityService(_testPepper);
+        _accountsService = new AccountsService(_mockUserRepository, _securityService);
         _validUserRegister = new RegisterUserDto
         {
             Name = "John Doe",
-            Email = "john.doe@test.com",
-            Password = "Password1!"
-        };
-        _duplicateUserRegister = new RegisterUserDto()
-        {
-            Name = "Jane Doe",
             Email = "john.doe@test.com",
             Password = "Password1!"
         };
@@ -51,18 +48,16 @@ public class AccountsServiceTests
 
         // Assert
         await _mockUserRepository.Received(1).CreateUser(Arg.Any<User>());
+
         Assert.Multiple(() =>
         {
             Assert.That(result, Is.True);
             Assert.That(capturedUser, Is.Not.Null);
-        });
-        Assert.Multiple(() =>
-        {
-            Assert.That(capturedUser.Name, Is.EqualTo(_validUserRegister.Name));
-            Assert.That(capturedUser.Email, Is.EqualTo(_validUserRegister.Email));
-            Assert.That(capturedUser.StaffId, Does.Match(@"^EJD-CTS-\d{4}$"));
-            Assert.That(capturedUser.Hash, Is.Not.Null);
-            Assert.That(capturedUser.Salt, Is.Not.Null);
+            Assert.That(capturedUser?.Name, Is.EqualTo(_validUserRegister.Name));
+            Assert.That(capturedUser?.Email, Is.EqualTo(_validUserRegister.Email));
+            Assert.That(capturedUser?.StaffId, Does.Match(StaffIdRegex));
+            Assert.That(capturedUser?.Hash, Is.Not.Null);
+            Assert.That(capturedUser?.Salt, Is.Not.Null);
         });
     }
 
@@ -75,22 +70,29 @@ public class AccountsServiceTests
     public async Task RegisterNewCaseWorker_DuplicateEmail_ReturnsFalse()
     {
         // Arrange
+        var duplicateUser = new RegisterUserDto()
+        {
+            Name = "Jane Doe",
+            Email = _validUserRegister.Email,
+            Password = "Password1!"
+        };
+
         _mockUserRepository.GetUserByEmail(Arg.Any<string>())
             .Returns(
                 x => Task.FromResult<User?>(null),
                 x => Task.FromResult<User?>(new User
                 {
-                    Email = _duplicateUserRegister.Email,
-                    Name = _duplicateUserRegister.Name,
+                    Email = duplicateUser.Email,
+                    Name = duplicateUser.Name,
                     StaffId = "EJD-CTS-1234",
                     Hash = "testHash"u8.ToArray(),
-                    Salt = "testSalt"u8.ToArray(),
+                    Salt = "testSalt"u8.ToArray()
                 })
             );
 
         // Act
         var resultPass = await _accountsService.RegisterNewCaseWorker(_validUserRegister);
-        var resultFail = await _accountsService.RegisterNewCaseWorker(_duplicateUserRegister);
+        var resultFail = await _accountsService.RegisterNewCaseWorker(duplicateUser);
 
         // Assert
         await _mockUserRepository.Received(1).CreateUser(Arg.Any<User>());
@@ -116,7 +118,18 @@ public class AccountsServiceTests
             Password = _validUserRegister.Password
         };
 
-        await _accountsService.RegisterNewCaseWorker(_validUserRegister);
+        _securityService.CreatePassHash(_validUserRegister.Password, out var hash, out var salt);
+
+        _mockUserRepository.GetUserByEmail(Arg.Any<string>())
+            .Returns(x => Task.FromResult<User?>(new User
+                {
+                    Email = _validUserRegister.Email,
+                    Name = _validUserRegister.Name,
+                    StaffId = "EJD-CTS-1234",
+                    Hash = hash,
+                    Salt = salt
+                })
+            );
 
         // Act
         var result = await _accountsService.Login(loginObj);
@@ -125,8 +138,8 @@ public class AccountsServiceTests
         Assert.Multiple(() =>
         {
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Name, Is.EqualTo(_validUserRegister.Name));
-            Assert.That(result.StaffId, Does.Match(@"^EJD-CTS-\d{4}$"));
+            Assert.That(result?.Name, Is.EqualTo(_validUserRegister.Name));
+            Assert.That(result?.StaffId, Does.Match(StaffIdRegex));
         });
     }
 
@@ -145,7 +158,18 @@ public class AccountsServiceTests
             Password = $"Wrong{_validUserRegister.Password}"
         };
 
-        await _accountsService.RegisterNewCaseWorker(_validUserRegister);
+        _securityService.CreatePassHash(_validUserRegister.Password, out var hash, out var salt);
+
+        _mockUserRepository.GetUserByEmail(Arg.Any<string>())
+            .Returns(x => Task.FromResult<User?>(new User
+                {
+                    Email = _validUserRegister.Email,
+                    Name = _validUserRegister.Name,
+                    StaffId = "EJD-CTS-1234",
+                    Hash = hash,
+                    Salt = salt
+                })
+            );
 
         // Act
         var result = await _accountsService.Login(loginObj);
