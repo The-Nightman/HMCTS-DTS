@@ -8,7 +8,7 @@ public class AccountsController(IAccountsService accountsService, ILogger<Accoun
     : BaseApiController
 {
     [HttpPost("register-new-caseworker")]
-    public async Task<IActionResult> RegisterNewCaseWorker(RegisterUserDto registerUserDto)
+    public async Task<ActionResult> RegisterNewCaseWorker(RegisterUserDto registerUserDto)
     {
         var status = await accountsService.RegisterNewCaseWorker(registerUserDto);
 
@@ -18,5 +18,18 @@ public class AccountsController(IAccountsService accountsService, ILogger<Accoun
         }
 
         return Created();
+    }
+
+    [HttpPost("login")]
+    public async Task<ActionResult<StaffDataDto>> Login(LoginDto loginDto)
+    {
+        var staffData = await accountsService.Login(loginDto);
+
+        if (staffData == null)
+        {
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        return Ok(staffData);
     }
 }
