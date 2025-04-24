@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router";
 import { UnauthenticatedLayout } from "./Layouts";
-import { StartPage } from "./Pages";
+import { RegisterPage, StartPage } from "./Pages";
 
 const App = () => {
   return (
@@ -13,7 +13,7 @@ const App = () => {
             element={<Navigate to={"/start"} />}
           />
           <Route path="/start" element={<StartPage />} />
-          <Route path="/register" element={<p>register</p>} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<p>login</p>} />
           <Route path="*" element={<Navigate to={"/start"} />} />
         </Route>
