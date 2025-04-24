@@ -1,4 +1,4 @@
-import { JSX } from "react";
+import { JSX, useEffect } from "react";
 import { Link } from "react-router";
 
 /**
@@ -19,6 +19,10 @@ import { Link } from "react-router";
  * @returns {JSX.Element} The rendered StartPage component
  */
 const StartPage = (): JSX.Element => {
+  useEffect(() => {
+    document.title = "HMCTS DTS - Start";
+  }, []);
+
   return (
     <>
       <div className="flex flex-col md:gap-8">
