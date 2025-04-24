@@ -19,8 +19,13 @@ public class Program
             app.MapOpenApi();
         }
 
-        app.UseAuthorization();
+        app.UseCors(x => x.AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .WithOrigins("http://localhost:5173")
+        );
 
+        app.UseAuthorization();
 
         app.MapControllers();
 

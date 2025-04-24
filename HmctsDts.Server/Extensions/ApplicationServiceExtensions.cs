@@ -11,6 +11,7 @@ public static class ApplicationServiceExtensions
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration config)
     {
+        services.AddCors();
         services.AddControllers();
         services.AddDbContext<DataContext>(opt => { opt.UseNpgsql(config.GetConnectionString("DefaultConnection")); });
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
