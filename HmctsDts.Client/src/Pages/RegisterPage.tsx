@@ -1,8 +1,18 @@
-import { JSX } from "react";
+import React, { JSX, useEffect, useState } from "react";
+import { RegisterData } from "../types/registerData";
+import { postRegisterUser } from "../api/postRegisterUser";
+import { AxiosError } from "axios";
+import ErrorSummary from "../Components/UX/ErrorSummary";
+import { useNavigate } from "react-router";
+
+interface SuccessState {
+  state: "success" | "error" | null;
+  content: React.ReactNode;
+}
 
 /**
  * RegisterPage Component
- * 
+ *
  * A component that renders a user registration form with email and password fields.
  * The form includes validation for:
  * - Email field with proper email format
@@ -13,32 +23,142 @@ import { JSX } from "react";
  *   - At least 1 number
  *   - At least 1 special character
  * - Password confirmation field
- * 
+ *
  * @remarks
  * Uses GOV.UK-style design patterns for styling and accessibility.
- * 
+ *
  * @returns {JSX.Element} A registration form with email and password fields
  */
 const RegisterPage = (): JSX.Element => {
-  // Not yet implemented
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const [successState, setSuccessState] = useState<SuccessState>({
+    state: null,
+    content: <></>,
+  });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "HMCTS DTS - Register";
+
+    if (successState.state === "error") {
+      document.title = `Error: ${document.title}`;
+    }
+  }, [successState.state]);
+
+  /**
+   * Handles the submission of the registration form.
+   *
+   * @remarks The function validates the input fields and sends a POST request to the server.
+   * If the registration is successful, it redirects the user to the login page.
+   * If there are errors, it updates the success state to display error messages.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event
+   * @returns {Promise<void>} A promise that resolves when the submission process is complete
+   */
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     e.preventDefault();
 
+    setSuccessState({
+      state: null,
+      content: <></>,
+    });
+
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email");
-    const password = formData.get("new-password");
-    const confirmPassword = formData.get("confirm-new-password");
+    const name: RegisterData["name"] = formData.get("name") as string;
+    const email: RegisterData["email"] = formData.get("email") as string;
+    const password: RegisterData["password"] = formData.get(
+      "new-password"
+    ) as string;
+    const confirmPassword: RegisterData["password"] = formData.get(
+      "confirm-new-password"
+    ) as string;
+
+    if (password !== confirmPassword) {
+      setSuccessState({
+        state: "error",
+        content: (
+          <li>
+            <a className="underline underline-offset-3" href="#new-password">
+              Passwords do not match. Please re-enter your password.
+            </a>
+          </li>
+        ),
+      });
+      return;
+    }
+
+    try {
+      const response = await postRegisterUser({
+        name,
+        email,
+        password,
+      });
+
+      if (response.status === 201) {
+        navigate("/login");
+      }
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        setSuccessState({
+          state: "error",
+          content: (
+            <li>
+              <a className="underline underline-offset-3" href="#sign-up-form">
+                {error.response?.data?.message || "Registration failed"}
+              </a>
+            </li>
+          ),
+        });
+      } else {
+        setSuccessState({
+          state: "error",
+          content: (
+            <li>
+              <a className="underline underline-offset-3" href="#sign-up-form">
+                {"An unexpected error occurred. Please try again."}
+              </a>
+            </li>
+          ),
+        });
+      }
+    }
   };
 
   return (
     <>
+      <ErrorSummary visiblity={successState.state === "error"}>
+        {successState.content}
+      </ErrorSummary>
       <h1 className="m-[10px_0_30px_0] text-3xl md:text-5xl font-bold font-[Helvetica]">
         Create an account
       </h1>
       <p className="text-lg mb-[20px]">
         You'll need your password when you sign in online, so make it memorable.
       </p>
-      <form onSubmit={(e) => handleSubmit(e)} className="flex flex-col gap-4">
+      <form
+        id="sign-up-form"
+        onSubmit={(e) => handleSubmit(e)}
+        className="flex flex-col gap-4"
+      >
+        <div className="flex flex-col sm:w-1/2">
+          <label
+            className="text-lg md:text-2xl font-bold mb-[8px]"
+            htmlFor="name"
+          >
+            Full name
+          </label>
+          <input
+            className="focus:outline-3 focus:outline-[#ffdd00] border-2 focus:shadow-[inset_0_0_0_2px] border-black p-1"
+            id="name"
+            name="name"
+            type="text"
+            spellCheck="false"
+            autoCapitalize="words"
+            aria-description="Enter your email address"
+            autoComplete="name"
+          />
+        </div>
         <div className="flex flex-col sm:w-1/2">
           <label
             className="text-lg md:text-2xl font-bold mb-[8px]"
