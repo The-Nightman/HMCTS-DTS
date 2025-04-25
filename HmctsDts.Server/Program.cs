@@ -1,3 +1,5 @@
+using HmctsDts.Server.Extensions;
+
 namespace HmctsDts.Server;
 
 public class Program
@@ -7,10 +9,7 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // Add services to the container.
-
-        builder.Services.AddControllers();
-        // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-        builder.Services.AddOpenApi();
+        builder.Services.AddApplicationServices(builder.Configuration);
 
         var app = builder.Build();
 
@@ -20,13 +19,18 @@ public class Program
             app.MapOpenApi();
         }
 
-        app.UseAuthorization();
+        app.UseCors(x => x.AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .WithOrigins("http://localhost:5173")
+        );
 
+        app.UseAuthorization();
 
         app.MapControllers();
 
         app.MapGet("/status", () => Results.Ok());
-        
+
         app.Run();
     }
 }
