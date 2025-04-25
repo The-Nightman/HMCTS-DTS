@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router";
 import { UnauthenticatedLayout } from "./Layouts";
-import { RegisterPage, StartPage } from "./Pages";
+import { LoginPage, RegisterPage, StartPage } from "./Pages";
 
 const App = () => {
   return (
@@ -14,7 +14,7 @@ const App = () => {
           />
           <Route path="/start" element={<StartPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/login" element={<p>login</p>} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Navigate to={"/start"} />} />
         </Route>
         <Route path="*" element={<div>404 Not Found</div>} />
